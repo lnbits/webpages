@@ -1,0 +1,16 @@
+{
+  "id": "webpages",
+  "name": "WebPages",
+  "short_description": "Admin-only HTML/CSS/JS pages served from static/pages.",
+  "tile": "/webpages/static/image/webpages.svg",
+  "version": "0.1.0",
+  "min_lnbits_version": "1.4.0",
+  "contributors": [
+    {
+      "name": "LNbits community",
+      "uri": "https://t.me/lnbits",
+      "role": "Community"
+    }
+  ],
+  "license": "MIT"
+}

@@ -1,0 +1,8 @@
+[
+  {
+    "path": "/webpages/",
+    "name": "PageWebpages",
+    "template": "/webpages/static/index.vue",
+    "component": "/webpages/static/index.js"
+  }
+]

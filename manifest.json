@@ -1,0 +1,9 @@
+{
+  "repos": [
+    {
+      "id": "webpages",
+      "organisation": "lnbits",
+      "repository": "webpages"
+    }
+  ]
+}
