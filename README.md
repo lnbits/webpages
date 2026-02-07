@@ -29,6 +29,13 @@ lnbits.yoursite.com {
 yoursite.com {
   encode zstd gzip
 
+  # Redirect ugly extension paths to clean URLs
+  @uglyIndex path /webpages/static/pages/index.html
+  redir @uglyIndex / 308
+
+  @uglyHtml path_regexp uglyHtml ^/webpages/static/pages/(.+\.html)$
+  redir @uglyHtml /{re.uglyHtml.1} 308
+
   # Serve homepage at /
   @root path /
   rewrite @root /webpages/static/pages/index.html

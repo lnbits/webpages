@@ -86,6 +86,13 @@ window.PageWebpages = {
         `${siteHost} {\n` +
         `  encode zstd gzip\n` +
         `\n` +
+        `  # Redirect ugly extension paths to clean URLs\n` +
+        `  @uglyIndex path /webpages/static/pages/index.html\n` +
+        `  redir @uglyIndex / 308\n` +
+        `\n` +
+        `  @uglyHtml path_regexp uglyHtml ^/webpages/static/pages/(.+\\.html)$\n` +
+        `  redir @uglyHtml /{re.uglyHtml.1} 308\n` +
+        `\n` +
         `  # Serve homepage at /\n` +
         `  @root path /\n` +
         `  rewrite @root /webpages/static/pages/${targetPath}\n` +
