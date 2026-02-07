@@ -86,12 +86,16 @@ window.PageWebpages = {
         `${siteHost} {\n` +
         `  encode zstd gzip\n` +
         `\n` +
-        `  # Forward requests to LNbits where WebPages files are served\n` +
-        `  reverse_proxy 127.0.0.1:5000\n` +
-        `\n` +
-        `  # Optional: serve your selected page at / without showing index.html in URL\n` +
+        `  # Serve homepage at /\n` +
         `  @root path /\n` +
         `  rewrite @root /webpages/static/pages/${targetPath}\n` +
+        `\n` +
+        `  # Keep clean URLs at the site root for pages and assets\n` +
+        `  @pages path *.html /styles.css /assets/*\n` +
+        `  rewrite @pages /webpages/static/pages{uri}\n` +
+        `\n` +
+        `  # Forward requests to LNbits where WebPages files are served\n` +
+        `  reverse_proxy 127.0.0.1:5000\n` +
         `}\n`
       )
     }

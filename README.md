@@ -28,10 +28,16 @@ lnbits.yoursite.com {
 
 yoursite.com {
   encode zstd gzip
-  reverse_proxy 127.0.0.1:5000
 
+  # Serve homepage at /
   @root path /
   rewrite @root /webpages/static/pages/index.html
+
+  # Keep clean URLs at the site root for pages and assets
+  @pages path *.html /styles.css /assets/*
+  rewrite @pages /webpages/static/pages{uri}
+
+  reverse_proxy 127.0.0.1:5000
 }
 ```
 
