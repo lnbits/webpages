@@ -4,18 +4,20 @@ window.PageWebpages = {
   data() {
     return {
       files: [],
+      images: [],
       filter: '',
       currentPath: '',
       content: '',
       savedContent: '',
       splitter: 40,
       saving: false,
-      autosaving: false,
       lastSavedAt: '',
       isNewFile: false,
-      autosaveTimer: null,
-      autosaveDelay: 700,
       previewKey: 0,
+      uploadingAsset: false,
+      codeEditor: null,
+      codeMirrorReady: false,
+      isEditorSyncing: false,
       newDialog: {
         show: false,
         path: '',
@@ -39,6 +41,15 @@ window.PageWebpages = {
       const needle = this.filter.toLowerCase()
       return this.files.filter(file => file.path.toLowerCase().includes(needle))
     },
+    filteredImages() {
+      if (!this.filter) {
+        return this.images
+      }
+      const needle = this.filter.toLowerCase()
+      return this.images.filter(image =>
+        image.path.toLowerCase().includes(needle)
+      )
+    },
     isHtml() {
       return this.currentPath.endsWith('.html')
     },
@@ -59,14 +70,6 @@ window.PageWebpages = {
         return 'about:blank'
       }
       return `${this.liveUrl}?v=${this.previewKey}`
-    },
-    editorLanguage() {
-      if (this.currentPath.endsWith('.css')) return 'css'
-      if (this.currentPath.endsWith('.js')) return 'js'
-      return 'html'
-    },
-    highlightedContent() {
-      return this.highlightCode(this.content || '', this.editorLanguage)
     },
     caddySample() {
       const lnbitsHost = 'lnbits.yoursite.com'
@@ -94,36 +97,153 @@ window.PageWebpages = {
     }
   },
   watch: {
-    currentPath() {
-      if (this.autosaveTimer) {
-        clearTimeout(this.autosaveTimer)
-        this.autosaveTimer = null
+    splitter() {
+      if (!this.codeEditor) {
+        return
       }
+      requestAnimationFrame(() => this.codeEditor && this.codeEditor.refresh())
+    },
+    currentPath() {
+      this.updateCodeEditorState()
       if (this.isHtml) {
         this.updatePreview()
       }
     }
   },
   async created() {
-    await this.refreshFiles()
+    await this.refreshAll()
+  },
+  async mounted() {
+    await this.ensureCodeMirror()
+    this.initCodeEditor()
   },
   beforeUnmount() {
-    if (this.autosaveTimer) {
-      clearTimeout(this.autosaveTimer)
-      this.autosaveTimer = null
-    }
+    this.destroyCodeEditor()
   },
   methods: {
-    onContentChange(val) {
-      this.content = val
-      this.scheduleAutosave()
-    },
-    syncEditorScroll() {
-      if (!this.$refs.inputLayer || !this.$refs.highlightLayer) {
+    async ensureCodeMirror() {
+      if (this.codeMirrorReady && window.CodeMirror) {
         return
       }
-      this.$refs.highlightLayer.scrollTop = this.$refs.inputLayer.scrollTop
-      this.$refs.highlightLayer.scrollLeft = this.$refs.inputLayer.scrollLeft
+
+      if (!document.getElementById('webpages-codemirror-css')) {
+        const link = document.createElement('link')
+        link.id = 'webpages-codemirror-css'
+        link.rel = 'stylesheet'
+        link.href = '/webpages/static/vendor/codemirror/codemirror.min.css'
+        document.head.appendChild(link)
+      }
+
+      await this.loadScriptOnce(
+        '/webpages/static/vendor/codemirror/codemirror.min.js'
+      )
+      await this.loadScriptOnce(
+        '/webpages/static/vendor/codemirror/mode/xml/xml.min.js'
+      )
+      await this.loadScriptOnce(
+        '/webpages/static/vendor/codemirror/mode/javascript/javascript.min.js'
+      )
+      await this.loadScriptOnce(
+        '/webpages/static/vendor/codemirror/mode/css/css.min.js'
+      )
+      await this.loadScriptOnce(
+        '/webpages/static/vendor/codemirror/mode/htmlmixed/htmlmixed.min.js'
+      )
+      this.codeMirrorReady = Boolean(window.CodeMirror)
+    },
+    loadScriptOnce(src) {
+      window.__webpagesLoadedScripts = window.__webpagesLoadedScripts || {}
+      if (window.__webpagesLoadedScripts[src]) {
+        return window.__webpagesLoadedScripts[src]
+      }
+      window.__webpagesLoadedScripts[src] = new Promise((resolve, reject) => {
+        const existing = document.querySelector(`script[src="${src}"]`)
+        if (existing) {
+          if (existing.dataset.loaded === 'true') {
+            resolve()
+            return
+          }
+          existing.addEventListener('load', () => resolve(), {once: true})
+          existing.addEventListener('error', () => reject(new Error(src)), {
+            once: true
+          })
+          return
+        }
+        const script = document.createElement('script')
+        script.src = src
+        script.async = true
+        script.addEventListener(
+          'load',
+          () => {
+            script.dataset.loaded = 'true'
+            resolve()
+          },
+          {once: true}
+        )
+        script.addEventListener('error', () => reject(new Error(src)), {
+          once: true
+        })
+        document.head.appendChild(script)
+      })
+      return window.__webpagesLoadedScripts[src]
+    },
+    editorModeForPath(path = '') {
+      if (path.endsWith('.css')) return 'css'
+      if (path.endsWith('.js')) return 'javascript'
+      return 'htmlmixed'
+    },
+    initCodeEditor() {
+      if (!window.CodeMirror || !this.$refs.codeEditor || this.codeEditor) {
+        return
+      }
+      this.codeEditor = window.CodeMirror(this.$refs.codeEditor, {
+        value: this.content || '',
+        mode: this.editorModeForPath(this.currentPath),
+        lineNumbers: true,
+        lineWrapping: false,
+        readOnly: !this.currentPath,
+        indentUnit: 2,
+        tabSize: 2,
+        indentWithTabs: false
+      })
+      this.codeEditor.on('change', () => {
+        if (this.isEditorSyncing) {
+          return
+        }
+        this.content = this.codeEditor.getValue()
+      })
+      this.updateCodeEditorState()
+      this.codeEditor.refresh()
+    },
+    destroyCodeEditor() {
+      if (!this.codeEditor) {
+        return
+      }
+      this.codeEditor.toTextArea?.()
+      this.codeEditor = null
+    },
+    updateCodeEditorState() {
+      if (!this.codeEditor) {
+        return
+      }
+      this.codeEditor.setOption(
+        'mode',
+        this.editorModeForPath(this.currentPath)
+      )
+      this.codeEditor.setOption('readOnly', !this.currentPath)
+    },
+    setEditorValue(value) {
+      if (!this.codeEditor) {
+        return
+      }
+      const nextValue = value || ''
+      if (this.codeEditor.getValue() === nextValue) {
+        return
+      }
+      this.isEditorSyncing = true
+      this.codeEditor.setValue(nextValue)
+      this.codeEditor.clearHistory()
+      this.isEditorSyncing = false
     },
     formatDate(value) {
       try {
@@ -138,8 +258,14 @@ window.PageWebpages = {
       if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
       return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
     },
+    assetUrl(path) {
+      return `${window.location.origin}/webpages/static/pages/${path}`
+    },
     normalizePath(value) {
       return value.replace(/^\/+/, '')
+    },
+    async refreshAll() {
+      await Promise.all([this.refreshFiles(), this.refreshImages()])
     },
     ensurePathExtension(path, template) {
       if (/\.(html|css|js)$/i.test(path)) {
@@ -152,72 +278,6 @@ window.PageWebpages = {
         return `${path}.js`
       }
       return `${path}.html`
-    },
-    escapeHtml(value) {
-      return value
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-    },
-    highlightCode(content, language) {
-      if (!content) {
-        return ''
-      }
-
-      let highlighted = this.escapeHtml(content)
-      const protectedTokens = []
-      const protect = (regex, cssClass) => {
-        highlighted = highlighted.replace(regex, match => {
-          const tokenId = `___TOKEN_${protectedTokens.length}___`
-          protectedTokens.push(`<span class="${cssClass}">${match}</span>`)
-          return tokenId
-        })
-      }
-
-      protect(/(\/\*[\s\S]*?\*\/|\/\/[^\n]*)/g, 'tok-comment')
-      protect(
-        /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`])*`)/g,
-        'tok-string'
-      )
-
-      highlighted = highlighted.replace(
-        /\b(\d+(?:\.\d+)?)\b/g,
-        '<span class="tok-number">$1</span>'
-      )
-
-      if (language === 'js') {
-        highlighted = highlighted.replace(
-          /\b(const|let|var|function|return|if|else|for|while|class|new|import|export|async|await|try|catch|throw)\b/g,
-          '<span class="tok-keyword">$1</span>'
-        )
-      } else if (language === 'css') {
-        highlighted = highlighted.replace(
-          /\b(@media|@import|@keyframes|display|position|color|background|font-size|font-family|padding|margin|border|width|height)\b/g,
-          '<span class="tok-keyword">$1</span>'
-        )
-      } else {
-        highlighted = highlighted.replace(
-          /(&lt;\/?)([a-zA-Z][a-zA-Z0-9-]*)([^&]*?&gt;)/g,
-          '$1<span class="tok-tag">$2</span>$3'
-        )
-      }
-
-      highlighted = highlighted.replace(/___TOKEN_(\d+)___/g, (_, index) => {
-        return protectedTokens[Number(index)] || ''
-      })
-
-      return highlighted
-    },
-    scheduleAutosave() {
-      if (!this.currentPath || this.content === this.savedContent) {
-        return
-      }
-      if (this.autosaveTimer) {
-        clearTimeout(this.autosaveTimer)
-      }
-      this.autosaveTimer = setTimeout(() => {
-        this.saveFile({isAutosave: true})
-      }, this.autosaveDelay)
     },
     updatePreview() {
       this.previewKey += 1
@@ -264,10 +324,6 @@ window.PageWebpages = {
       )
     },
     async createFile() {
-      if (this.autosaveTimer) {
-        clearTimeout(this.autosaveTimer)
-        this.autosaveTimer = null
-      }
       const rawPath = this.newDialog.path.trim()
       if (!rawPath) {
         this.$q.notify({type: 'negative', message: 'File path is required.'})
@@ -286,6 +342,7 @@ window.PageWebpages = {
         this.currentPath = normalizedPath
         this.content = templateContent
         this.savedContent = templateContent
+        this.setEditorValue(this.content)
         this.isNewFile = false
         this.newDialog.show = false
         if (this.isHtml) {
@@ -305,12 +362,88 @@ window.PageWebpages = {
         LNbits.utils.notifyApiError(error)
       }
     },
+    async refreshImages() {
+      try {
+        const {data} = await LNbits.api.request(
+          'GET',
+          '/webpages/api/v1/pages/assets'
+        )
+        this.images = data.files || []
+      } catch (error) {
+        LNbits.utils.notifyApiError(error)
+      }
+    },
+    openAssetPicker() {
+      if (this.uploadingAsset) {
+        return
+      }
+      this.$refs.assetInput?.click()
+    },
+    async onAssetSelected(event) {
+      const [file] = event.target.files || []
+      if (!file) {
+        return
+      }
+      this.uploadingAsset = true
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('folder', 'assets')
+      try {
+        const {data} = await LNbits.api.request(
+          'POST',
+          '/webpages/api/v1/pages/assets',
+          null,
+          formData,
+          {
+            headers: {'Content-Type': 'multipart/form-data'}
+          }
+        )
+        await this.refreshImages()
+        this.$q.notify({type: 'positive', message: `Uploaded ${data.path}`})
+      } catch (error) {
+        LNbits.utils.notifyApiError(error)
+      } finally {
+        this.uploadingAsset = false
+        event.target.value = ''
+      }
+    },
+    async copyAssetUrl(path) {
+      try {
+        await navigator.clipboard.writeText(this.assetUrl(path))
+        this.$q.notify({type: 'positive', message: 'Image URL copied.'})
+      } catch (error) {
+        this.$q.notify({
+          type: 'negative',
+          message: 'Clipboard copy failed. Copy manually.'
+        })
+      }
+    },
+    async confirmDeleteAsset(path) {
+      this.$q
+        .dialog({
+          title: 'Delete image?',
+          message: path,
+          cancel: true,
+          persistent: true
+        })
+        .onOk(async () => {
+          await this.deleteAsset(path)
+        })
+    },
+    async deleteAsset(path) {
+      try {
+        await LNbits.api.request(
+          'DELETE',
+          `/webpages/api/v1/pages/assets/${encodeURI(path)}`
+        )
+        await this.refreshImages()
+        this.$q.notify({type: 'positive', message: 'Image deleted.'})
+      } catch (error) {
+        LNbits.utils.notifyApiError(error)
+      }
+    },
     async selectFile(path) {
       try {
-        if (this.autosaveTimer) {
-          clearTimeout(this.autosaveTimer)
-          this.autosaveTimer = null
-        }
         const safePath = this.normalizePath(path)
         const {data} = await LNbits.api.request(
           'GET',
@@ -319,6 +452,7 @@ window.PageWebpages = {
         this.currentPath = safePath
         this.content = data.content || ''
         this.savedContent = this.content
+        this.setEditorValue(this.content)
         this.isNewFile = false
         if (this.isHtml) {
           this.updatePreview()
@@ -327,25 +461,17 @@ window.PageWebpages = {
         LNbits.utils.notifyApiError(error)
       }
     },
-    async saveFile(options = {}) {
+    async saveFile() {
       if (!this.currentPath) {
         return
       }
-      if (this.saving || this.autosaving) {
+      if (this.saving) {
         return
       }
-      if (this.content === this.savedContent && options.isAutosave) {
+      if (this.content === this.savedContent) {
         return
       }
-      if (this.autosaveTimer) {
-        clearTimeout(this.autosaveTimer)
-        this.autosaveTimer = null
-      }
-      if (options.isAutosave) {
-        this.autosaving = true
-      } else {
-        this.saving = true
-      }
+      this.saving = true
       try {
         const payload = {
           path: this.currentPath,
@@ -363,17 +489,12 @@ window.PageWebpages = {
         if (this.isHtml) {
           this.updatePreview()
         }
-        if (options.isAutosave) {
-          await this.refreshFiles()
-        } else {
-          await this.refreshFiles()
-          this.$q.notify({type: 'positive', message: 'Saved.'})
-        }
+        await this.refreshFiles()
+        this.$q.notify({type: 'positive', message: 'Saved.'})
       } catch (error) {
         LNbits.utils.notifyApiError(error)
       } finally {
         this.saving = false
-        this.autosaving = false
       }
     },
     async confirmDelete(path = null) {
@@ -398,10 +519,6 @@ window.PageWebpages = {
         return
       }
       try {
-        if (this.autosaveTimer) {
-          clearTimeout(this.autosaveTimer)
-          this.autosaveTimer = null
-        }
         await LNbits.api.request(
           'DELETE',
           `/webpages/api/v1/pages/${encodeURI(targetPath)}`
@@ -410,6 +527,7 @@ window.PageWebpages = {
           this.currentPath = ''
           this.content = ''
           this.savedContent = ''
+          this.setEditorValue('')
           this.isNewFile = false
         }
         await this.refreshFiles()

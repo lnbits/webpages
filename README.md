@@ -5,6 +5,7 @@ Admin-only editor for managing static HTML, CSS, and JavaScript files served fro
 ## Features
 
 - Admin-only create, edit, and delete for `.html`, `.css`, and `.js` files
+- Admin-only upload and delete for image assets (`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`, `.ico`, `.avif`)
 - Live HTML preview while editing
 - Autosave support
 - File list with quick delete actions
