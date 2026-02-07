@@ -2,9 +2,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
-
 from lnbits.decorators import check_admin
+from pydantic import BaseModel, Field
 
 webpages_api_router = APIRouter(prefix="/api/v1", dependencies=[Depends(check_admin)])
 

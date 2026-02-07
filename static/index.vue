@@ -6,7 +6,12 @@
           <q-card-section class="row items-center">
             <div class="text-h6">WebPages</div>
             <q-space></q-space>
-            <q-btn unelevated color="primary" label="New File" @click="openNewDialog"></q-btn>
+            <q-btn
+              unelevated
+              color="primary"
+              label="New File"
+              @click="openNewDialog"
+            ></q-btn>
           </q-card-section>
 
           <q-separator></q-separator>
@@ -31,7 +36,8 @@
                   <q-item-section>
                     <q-item-label>${ file.path }</q-item-label>
                     <q-item-label caption>
-                      ${ formatSize(file.size) } · ${ formatDate(file.updated_at) }
+                      ${ formatSize(file.size) } · ${
+                      formatDate(file.updated_at) }
                     </q-item-label>
                   </q-item-section>
                   <q-item-section side>
@@ -60,18 +66,28 @@
 
       <div class="col-12 col-md-10 column full-height">
         <q-card class="column full-height">
-
           <q-card-section class="row items-center q-gutter-sm">
             <div class="text-h6">Editor</div>
-            <q-chip v-if="dirty" color="warning" text-color="black" dense>Unsaved</q-chip>
-            <q-chip v-if="autosaving" color="primary" text-color="white" dense>Autosaving...</q-chip>
-            <q-chip v-else-if="lastSavedAt" color="positive" text-color="white" dense>
+            <q-chip v-if="dirty" color="warning" text-color="black" dense
+              >Unsaved</q-chip
+            >
+            <q-chip v-if="autosaving" color="primary" text-color="white" dense
+              >Autosaving...</q-chip
+            >
+            <q-chip
+              v-else-if="lastSavedAt"
+              color="positive"
+              text-color="white"
+              dense
+            >
               Saved ${ lastSavedAt }
             </q-chip>
             <q-space></q-space>
             <q-btn flat icon="refresh" @click="refreshFiles"></q-btn>
             <q-btn flat icon="description" @click="openCaddyDialog">
-              <q-tooltip>Caddyfile sample to serve over reverse_proxy</q-tooltip>
+              <q-tooltip
+                >Caddyfile sample to serve over reverse_proxy</q-tooltip
+              >
             </q-btn>
             <q-btn
               flat
@@ -126,17 +142,20 @@
               <template v-slot:after>
                 <div class="q-pa-md column full-height">
                   <div v-if="isHtml" class="col full-height">
-                      <iframe
-                        :key="previewKey"
-                        :src="previewFrameUrl"
-                        sandbox="allow-scripts allow-forms allow-same-origin"
-                        class="fit bordered rounded-borders bg-grey-1"
-                      ></iframe>
+                    <iframe
+                      :key="previewKey"
+                      :src="previewFrameUrl"
+                      sandbox="allow-scripts allow-forms allow-same-origin"
+                      class="fit bordered rounded-borders bg-grey-1"
+                    ></iframe>
                   </div>
 
-                  <div v-else class="text-caption col full-height flex flex-center">
-                    Preview is available for HTML files. Save CSS/JS and reference
-                    them from an HTML page in this folder.
+                  <div
+                    v-else
+                    class="text-caption col full-height flex flex-center"
+                  >
+                    Preview is available for HTML files. Save CSS/JS and
+                    reference them from an HTML page in this folder.
                   </div>
                 </div>
               </template>
@@ -146,10 +165,21 @@
           <q-separator></q-separator>
 
           <q-card-actions align="right">
-            <q-btn flat color="negative" label="Delete" :disable="!currentPath" @click="confirmDelete"></q-btn>
-            <q-btn color="primary" label="Save" :disable="!currentPath" :loading="saving" @click="saveFile"></q-btn>
+            <q-btn
+              flat
+              color="negative"
+              label="Delete"
+              :disable="!currentPath"
+              @click="confirmDelete"
+            ></q-btn>
+            <q-btn
+              color="primary"
+              label="Save"
+              :disable="!currentPath"
+              :loading="saving"
+              @click="saveFile"
+            ></q-btn>
           </q-card-actions>
-
         </q-card>
       </div>
     </div>
@@ -188,7 +218,12 @@
         <q-card-section class="row items-center">
           <div class="text-h6">Caddyfile Sample</div>
           <q-space></q-space>
-          <q-btn flat icon="content_copy" label="Copy" @click="copyCaddySample"></q-btn>
+          <q-btn
+            flat
+            icon="content_copy"
+            label="Copy"
+            @click="copyCaddySample"
+          ></q-btn>
         </q-card-section>
         <q-separator></q-separator>
         <q-card-section>
@@ -229,7 +264,7 @@
   inset: 0;
   margin: 0;
   padding: 12px;
-  font-family: "Fira Code", "JetBrains Mono", Consolas, Monaco, monospace;
+  font-family: 'Fira Code', 'JetBrains Mono', Consolas, Monaco, monospace;
   font-size: 14px;
   line-height: 1.65;
   white-space: pre;
@@ -275,6 +310,8 @@
 
 .webpages-editor-page .code-editor-wrap:focus-within {
   border-color: #4ea1ff;
-  box-shadow: 0 0 0 1px rgba(78, 161, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow:
+    0 0 0 1px rgba(78, 161, 255, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 </style>

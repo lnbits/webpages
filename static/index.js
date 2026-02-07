@@ -71,9 +71,10 @@ window.PageWebpages = {
     caddySample() {
       const lnbitsHost = 'lnbits.yoursite.com'
       const siteHost = 'yoursite.com'
-      const targetPath = this.currentPath && this.currentPath.endsWith('.html')
-        ? this.currentPath
-        : 'index.html'
+      const targetPath =
+        this.currentPath && this.currentPath.endsWith('.html')
+          ? this.currentPath
+          : 'index.html'
       return (
         `${lnbitsHost} {\n` +
         `  encode zstd gzip\n` +
@@ -173,10 +174,7 @@ window.PageWebpages = {
         })
       }
 
-      protect(
-        /(\/\*[\s\S]*?\*\/|\/\/[^\n]*)/g,
-        'tok-comment'
-      )
+      protect(/(\/\*[\s\S]*?\*\/|\/\/[^\n]*)/g, 'tok-comment')
       protect(
         /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`])*`)/g,
         'tok-string'
@@ -301,10 +299,7 @@ window.PageWebpages = {
     },
     async refreshFiles() {
       try {
-        const {data} = await LNbits.api.request(
-          'GET',
-          '/webpages/api/v1/pages'
-        )
+        const {data} = await LNbits.api.request('GET', '/webpages/api/v1/pages')
         this.files = data.files || []
       } catch (error) {
         LNbits.utils.notifyApiError(error)
@@ -356,7 +351,12 @@ window.PageWebpages = {
           path: this.currentPath,
           content: this.content || ''
         }
-        await LNbits.api.request('POST', '/webpages/api/v1/pages', null, payload)
+        await LNbits.api.request(
+          'POST',
+          '/webpages/api/v1/pages',
+          null,
+          payload
+        )
         this.savedContent = this.content
         this.lastSavedAt = new Date().toLocaleTimeString()
         this.isNewFile = false
