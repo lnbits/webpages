@@ -74,10 +74,7 @@ window.PageWebpages = {
     caddySample() {
       const lnbitsHost = 'lnbits.yoursite.com'
       const siteHost = 'yoursite.com'
-      const targetPath =
-        this.currentPath && this.currentPath.endsWith('.html')
-          ? this.currentPath
-          : 'index.html'
+      const targetPath = 'index.html'
       return (
         `${lnbitsHost} {\n` +
         `  encode zstd gzip\n` +
