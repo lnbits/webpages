@@ -26,6 +26,10 @@ lnbits.yoursite.com {
   reverse_proxy 127.0.0.1:5000
 }
 
+www.yoursite.com {
+  redir https://yoursite.com{uri} permanent
+}
+
 yoursite.com {
   encode zstd gzip
 

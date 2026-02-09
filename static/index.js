@@ -83,6 +83,9 @@ window.PageWebpages = {
         `  encode zstd gzip\n` +
         `  reverse_proxy 127.0.0.1:5000\n` +
         `}\n\n` +
+        `www.${siteHost} {\n` +
+        `  redir https://${siteHost}{uri} permanent\n` +
+        `}\n\n` +
         `${siteHost} {\n` +
         `  encode zstd gzip\n` +
         `\n` +
