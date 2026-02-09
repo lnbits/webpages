@@ -76,10 +76,6 @@ window.PageWebpages = {
       const siteHost = 'yoursite.com'
       const targetPath = 'index.html'
       return (
-        `${lnbitsHost} {\n` +
-        `  encode zstd gzip\n` +
-        `  reverse_proxy 127.0.0.1:5000\n` +
-        `}\n\n` +
         `www.${siteHost} {\n` +
         `  redir https://${siteHost}{uri} permanent\n` +
         `}\n\n` +
@@ -102,6 +98,10 @@ window.PageWebpages = {
         `  rewrite @pages /webpages/static/pages{uri}\n` +
         `\n` +
         `  # Forward requests to LNbits where WebPages files are served\n` +
+        `  reverse_proxy 127.0.0.1:5000\n` +
+        `}\n\n` +
+        `${lnbitsHost} {\n` +
+        `  encode zstd gzip\n` +
         `  reverse_proxy 127.0.0.1:5000\n` +
         `}\n`
       )

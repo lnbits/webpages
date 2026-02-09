@@ -21,11 +21,6 @@ Admin-only editor for managing static HTML, CSS, and JavaScript files served fro
 ## Reverse Proxy Example (Caddy)
 
 ```caddy
-lnbits.yoursite.com {
-  encode zstd gzip
-  reverse_proxy 127.0.0.1:5000
-}
-
 www.yoursite.com {
   redir https://yoursite.com{uri} permanent
 }
@@ -48,6 +43,11 @@ yoursite.com {
   @pages path *.html /styles.css /assets/*
   rewrite @pages /webpages/static/pages{uri}
 
+  reverse_proxy 127.0.0.1:5000
+}
+
+lnbits.yoursite.com {
+  encode zstd gzip
   reverse_proxy 127.0.0.1:5000
 }
 ```
