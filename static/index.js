@@ -91,7 +91,7 @@ window.PageWebpages = {
         `\n` +
         `  # Serve homepage at /\n` +
         `  @root path /\n` +
-        `  rewrite @root /webpages/static/pages/${targetPath}\n` +
+        `  rewrite @root /webpages/static/pages/index.html\n` +
         `\n` +
         `  # Keep clean URLs at the site root for pages and assets\n` +
         `  @pages path *.html /styles.css /assets/*\n` +
