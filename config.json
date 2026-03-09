@@ -2,7 +2,7 @@
   "id": "webpages",
   "name": "WebPages",
   "short_description": "Admin-only HTML/CSS/JS pages served from static/pages",
-  "tile": "/webpages/static/image/webpages.svg",
+  "tile": "/webpages/static/image/webpages.png",
   "version": "0.1.0",
   "min_lnbits_version": "1.4.0",
   "contributors": [
